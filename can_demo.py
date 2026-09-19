@@ -2,17 +2,10 @@ import can
 import time
 import random
 import threading
+from dbc_reference import decode, describe
 
 ENGINE_RPM_ID = 0x0C0
 VEHICLE_SPEED_ID = 0x0B0
-
-def decode_rpm(data):
-    raw = (data[0] << 8) | data[1]
-    return raw / 4
-
-def decode_speed(data):
-    raw = (data[0] << 8) | data[1]
-    return raw / 10
 
 def run_engine(bus, count=10):
     for _ in range(count):
@@ -37,10 +30,9 @@ def run_listener(bus, count=20):
         msg = bus.recv(timeout=2)
         if msg is None:
             continue
-        if msg.arbitration_id == ENGINE_RPM_ID:
-            print(f"    [Listener] ID=0x{msg.arbitration_id:X} -> RPM: {decode_rpm(msg.data)}")
-        elif msg.arbitration_id == VEHICLE_SPEED_ID:
-            print(f"    [Listener] ID=0x{msg.arbitration_id:X} -> Speed: {decode_speed(msg.data):.1f} km/h")
+        value = decode(msg.arbitration_id, msg.data)
+        if value is not None:
+            print(f"    [Listener] {describe(msg.arbitration_id)} -> {value}")
 
 if __name__ == "__main__":
     engine_bus = can.interface.Bus(channel='test', bustype='virtual')
